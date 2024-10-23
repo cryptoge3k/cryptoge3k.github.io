@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recherche Cryptomonnaies</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .search-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        input[type="text"] {
+            width: 80%;
+            height: 50px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 1em;
+        }
+
+        .clear-btn {
+            cursor: pointer;
+            color: white;
+            font-size: 1.5em;
+            margin-left: -50px;
+            /* Ajustez la position si nécessaire */
+            display: none;
+            /* Masqué par défaut */
+        }
+
+        input:not(:placeholder-shown)+.clear-btn {
+            display: inline;
+            /* Affiche la croix si l'input a du contenu */
+        }
+
+        button {
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .crypto-list {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            margin-top: 20px;
+            padding: 0 10px;
+        }
+
+        .crypto-name {
+            color: #b0b0b0;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .crypto-item {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            margin-bottom: 10px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            width: 50%;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .address-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .tabler-icon {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .tabler-icon.hidden {
+            opacity: 0;
+            transform: scale(0.5);
+        }
+
+        @media (max-width: 600px) {
+            input[type="text"] {
+                width: 90%;
+                font-size: 0.9em;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .crypto-item {
+                flex-direction: column;
+                align-items: flex-start;
+                width: auto;
+            }
+
+            .copy-btn {
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+
+<body onload="filterCryptos()">
+
+    <h1>MaitreGEEK's Cryptocurrency list</h1>
+    <div class="container">
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search a cryptocurrency..." oninput="filterCryptos()">
+            <span class="clear-btn" onclick="clearInput()" title="Clear input">&#10006;</span>
+        </div>
+
+        <div class="crypto-list" id="cryptoList"></div>
+    </div>
+
+    <script>
+        const cryptos = {
+            "bitcoin - BTC": "bc1qtuxx3085q68fqwf39hfrtwawfqnm2qqajsq5cd",
+            "ethereum - ETH": "0x03f96a08fFb9dbA24Eb14152d0576424d0F21733",
+            "binancecoin - BNB": "bnb1e8hzh83w4xjfhksq3l220unn40t6ayexadmsc4",
+            "bitcoincash - BCH": "bitcoincash:qzd2m9d3u2ejj85clam303nwagqg35qhkydalw6ju9",
+            "litecoin - LTC": "ltc1q4xl7cdfktg5juyp3v2x4yn0gphuhcqsl0xctcn",
+            "xrp - XRP": "rMZJG4nHTbKHgGaFBBYQAEDYVsBxvXz5ZA",
+            "dogecoin - DOGE": "D6VUpJNsf9XEzNWwLRMnZF2EkCtJbVYs9D",
+            "ethereumclassic - ETC": "0x4282040d59b52Ee6195D8d0358974e41b63A4D89",
+            "dash - DASH": "XqrUxjWuzz3PMMjeDKHCM6wfcvS8h5m6uk",
+            "cardano - ADA": "addr1q96x4afhytqq4rumrpqpwnl4u45dyrm8qyflfnz9206mfk2jdrd3jq9m3am5vev2lltm9twnpscly67tnntyfrfv7uyssqgm3k",
+            "polkadot - DOT": "14HPgiauszv4LCft4Gr4B9fKTTLtmcX5gTgLHN54Kgw8r8cK",
+            "solana - SOL": "4cK9Kr5cAUfj3VyaTBqwz2z9WvabCo6XHzeHuQaZCTKf",
+            "tezos - XTZ": "tz1QaTd1z3DQsgu7eq8r9rQqLKCdtB9Fhhcm",
+            "monero - XMR": "497tR7g8vqpH4a5g86jrB6g5RkR817cnRjApPrXAJN5RUmP1QKyTerT8vagFVu7tmBGo2zkGvikJnRVnHJcBWwun7gxPUea",
+            "zcash - ZEC": "t1dSDrn68kpfCzmJD3UNRNCfuRyNuRLRLMG",
+            "groestlcoin - GRS": "grs1qtz2wae5elucn76z5m5jwzevqsyuexauvksz24j",
+            "viacoin - VIA": "via1qahgyeweyqpclg49x78euhhf3e7z37u4e2q7zu8",
+            "ton - TON": "UQD2re5gPZm6ro37AdsPjuWhCDCu_Q8naPoT4EZEzf7VJokI"
+        };
+
+        function filterCryptos() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const cryptoList = document.getElementById('cryptoList');
+            cryptoList.innerHTML = '';
+
+            let hasResults = false; // Variable pour vérifier si des résultats existent
+
+            Object.keys(cryptos).forEach(key => {
+                if (!input || key.toLowerCase().includes(input)) {
+                    hasResults = true; // On a trouvé au moins un résultat
+                    const cryptoItem = document.createElement('div');
+                    cryptoItem.classList.add('crypto-item');
+
+                    const croppedAddress = cropAddress(cryptos[key], 30);
+
+                    cryptoItem.innerHTML = `
+                <div class="address-container">
+                    <span class="crypto-name">${key}</span>
+                    <span class="crypto-address">${croppedAddress}</span>
+                </div>
+                <button class="copy-btn" onclick="copyToClipboard('${cryptos[key]}', this)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-copy">
+                        <path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z"></path>
+                        <path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"></path>
+                    </svg>
+                </button>
+            `;
+
+                    cryptoList.appendChild(cryptoItem);
+                }
+            });
+
+            // Si aucun résultat n'a été trouvé, affiche le message
+            if (!hasResults) {
+                const noResultsMessage = document.createElement('div');
+                noResultsMessage.classList.add('no-results-message');
+                noResultsMessage.innerHTML = `
+            <p>No results found. Please contact me if your cryptocurrency is not listed:</p>
+<p>On Discord: maitregeek</p>
+<p>By email: <a href="mailto:crypto.maitregeek.eu">crypto.maitregeek.eu</a></p>`;
+                cryptoList.appendChild(noResultsMessage);
+            }
+        }
+
+
+        function cropAddress(address, maxLength) {
+            if (address.length > maxLength) {
+                return address.slice(0, maxLength) + '...';
+            }
+            return address;
+        }
+
+        function copyToClipboard(address, button) {
+            const svgElement = button.querySelector('svg');
+
+            svgElement.classList.add('hidden');
+
+            setTimeout(() => {
+                navigator.clipboard.writeText(address)
+                    .then(() => {
+                        svgElement.outerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-check">
+                                <path d="M5 12l5 5l10 -10"></path>
+                            </svg>
+                            `;
+                        svgElement.classList.remove('hidden');
+
+                        setTimeout(() => {
+                            button.querySelector('svg').outerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-copy">
+                                    <path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z"></path>
+                                    <path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"></path>
+                                </svg>`
+
+                        }, 1500);
+                    })
+                    .catch(err => {
+                        console.error('Erreur lors de la copie :', err);
+                        svgElement.classList.remove('hidden');
+                    });
+            }, 300);
+        }
+
+        function clearInput() {
+            const input = document.getElementById('searchInput');
+            input.value = '';
+            filterCryptos();
+        }
+
+
+    </script>
+</body>
+
+</html>
